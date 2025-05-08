@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ product.name }} - ProductRec{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-5">
+        {% if product.image_url %}
+            <img src="{{ product.image_url }}" class="img-fluid rounded" alt="{{ product.name }}">
+        {% else %}
+            <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded" style="height: 400px;">
+                <span>No Image Available</span>
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1>{{ product.name }}</h1>
+        <p class="lead">{{ product.description }}</p>
+        
+        <div class="mb-3">
+            <h4 class="text-primary">${{ "%.2f"|format(product.price) }}</h4>
+        </div>
+        
+        <div class="mb-3">
+            <p>Category: <a href="{{ url_for('category', category_id=product.category_id) }}">{{ product.category.name }}</a></p>
+        </div>
+        
+        <div class="mb-3">
+            {% if avg_rating > 0 %}
+                <h5>Average Rating: {{ "%.1f"|format(avg_rating) }}/5.0 ({{ ratings|length }} reviews)</h5>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ (avg_rating/5)*100 }}%;" aria-valuenow="{{ avg_rating }}" aria-valuemin="0" aria-valuemax="5">{{ "%.1f"|format(avg_rating) }}</div>
+                </div>
+            {% else %}
+                <h5>No ratings yet</h5>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <button class="btn btn-primary btn-add-to-cart" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">Add to Cart</button>
+            <button class="btn btn-outline-secondary btn-add-to-wishlist" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">Add to Wishlist</button>
+        </div>
+        
+        <div id="alertPlaceholder"></div>
+    </div>
+</div>
+
+{% if is_authenticated %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Rate this Product</h3>
+            </div>
+            <div class="card-body">
+                <form id="ratingForm">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Your Rating (1-5)</label>
+                        <select class="form-select" id="rating" name="rating" required>
+                            <option value="">Select Rating</option>
+                            <option value="5" {% if user_rating and user_rating.rating == 5 %}selected{% endif %}>5 - Excellent</option>
+                            <option value="4" {% if user_rating and user_rating.rating == 4 %}selected{% endif %}>4 - Good</option>
+                            <option value="3" {% if user_rating and user_rating.rating == 3 %}selected{% endif %}>3 - Average</option>
+                            <option value="2" {% if user_rating and user_rating.rating == 2 %}selected{% endif %}>2 - Poor</option>
+                            <option value="1" {% if user_rating and user_rating.rating == 1 %}selected{% endif %}>1 - Very Poor</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="review" class="form-label">Your Review (Optional)</label>
+                        <textarea class="form-control" id="review" name="review" rows="3">{% if user_rating %}{{ user_rating.review }}{% endif %}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Rating</button>
+                    <div id="ratingMessage" class="mt-2"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if similar_products %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Similar Products</h2>
+        <div class="row">
+            {% for prod in similar_products %}
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        {% if prod.image_url %}
+                            <img src="{{ prod.image_url }}" class="card-img-top" alt="{{ prod.name }}">
+                        {% else %}
+                            <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <span>No Image</span>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ prod.name }}</h5>
+                            <p class="card-text">{{ prod.description|truncate(100) }}</p>
+                            <p class="card-text"><strong>${{ "%.2f"|format(prod.price) }}</strong></p>
+                            <a href="{{ url_for('product', product_id=prod.id) }}" class="btn btn-outline-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if ratings %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Customer Reviews</h2>
+        {% for rating in ratings %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">Rating: {{ rating.rating }}/5</h5>
+                        <small class="text-muted">{{ rating.created_at.strftime('%B %d, %Y') }}</small>
+                    </div>
+                    {% if rating.review %}
+                        <p class="card-text">{{ rating.review }}</p>
+                    {% else %}
+                        <p class="card-text text-muted">No written review provided.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Submit rating form via AJAX
+    $('#ratingForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            type: 'POST',
+            url: '{{ url_for("rate_product") }}',
+            data: $(this).serialize(),
+            success: function(response) {
+                if(response.success) {
+                    $('#ratingMessage').html('<div class="alert alert-success">' + response.message + '</div>');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    $('#ratingMessage').html('<div class="alert alert-danger">' + response.message + '</div>');
+                }
+            },
+            error: function() {
+                $('#ratingMessage').html('<div class="alert alert-danger">An error occurred. Please try again.</div>');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

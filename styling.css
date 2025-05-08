@@ -1,0 +1,63 @@
+/* Custom styles for ProductRec */
+
+/* Product card image size standardization */
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Footer styling */
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Rating stars */
+.rating {
+    color: gold;
+    font-size: 1.25rem;
+}
+
+/* Product price emphasis */
+.product-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--bs-primary);
+}
+
+/* Card hover effect */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+/* Custom button styling */
+.btn-add-to-cart, .btn-add-to-wishlist {
+    transition: all 0.3s ease;
+}
+
+.btn-add-to-cart:hover {
+    transform: scale(1.05);
+}
+
+/* Make sure images don't stretch */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .jumbotron h1 {
+        font-size: 2rem;
+    }
+    
+    .card-img-top {
+        height: 150px;
+    }
+}
